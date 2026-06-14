@@ -78,9 +78,22 @@ def map_get(mx, my):
         return MAP_STR[int(my)][int(mx)]
     return '#'
 
-# ── GENERATE WALL TEXTURES ─────────────────────
+# ── LOAD / GENERATE TEXTURES ──────────────────
+ASSET_DIR = "assets/textures"
+
+def load_or_make(filename, fallback_fn, size=(64,64)):
+    """Load PNG dari assets/, fallback ke prosedural jika tidak ada."""
+    path = f"{ASSET_DIR}/{filename}"
+    try:
+        img = pygame.image.load(path).convert_alpha()
+        img = pygame.transform.scale(img, size)
+        print(f"  [ASSET] Loaded: {filename}")
+        return img
+    except:
+        print(f"  [ASSET] Prosedural: {filename}")
+        return fallback_fn()
+
 def make_wall_tex(w=64, h=64):
-    """Buat tekstur dinding bata secara prosedural."""
     s = pygame.Surface((w, h)); s.fill((60,35,20))
     for row in range(0, h, 16):
         offset = 20 if (row//16)%2 else 0
@@ -101,24 +114,21 @@ def make_ceil_tex(w=64, h=64):
     s = pygame.Surface((w, h)); s.fill((10,12,35))
     for _ in range(30):
         x,y=random.randint(0,w),random.randint(0,h)
-        pygame.draw.circle(s,(180,190,255),( x,y),random.randint(1,2))
+        pygame.draw.circle(s,(180,190,255),(x,y),random.randint(1,2))
     return s
 
-WALL_TEX  = make_wall_tex()
-FLOOR_TEX = make_floor_tex()
-CEIL_TEX  = make_ceil_tex()
-
-# ── SPRITE TEXTURES ────────────────────────────
 def make_book_sprite(sz=48):
     s = pygame.Surface((sz,sz), pygame.SRCALPHA)
-    pygame.draw.rect(s,(200,40,40),(4,0,sz-8,sz)); pygame.draw.rect(s,(240,80,80),(4,0,6,sz))
+    pygame.draw.rect(s,(200,40,40),(4,0,sz-8,sz))
+    pygame.draw.rect(s,(240,80,80),(4,0,6,sz))
     for y in range(10,sz,8): pygame.draw.line(s,(255,160,160),(10,y),(sz-6,y),1)
     pygame.draw.rect(s,(180,30,30),(4,0,sz-8,sz),2); return s
 
 def make_pencil_sprite(sz=48):
     s = pygame.Surface((sz,sz), pygame.SRCALPHA)
     pts = [(sz//2-5,4),(sz//2+5,4),(sz//2+5,sz-10),(sz//2,sz),(sz//2-5,sz-10)]
-    pygame.draw.polygon(s,(255,220,50),pts); pygame.draw.polygon(s,(220,180,30),pts,2)
+    pygame.draw.polygon(s,(255,220,50),pts)
+    pygame.draw.polygon(s,(220,180,30),pts,2)
     pygame.draw.polygon(s,(255,180,150),[(sz//2-5,sz-10),(sz//2+5,sz-10),(sz//2,sz)])
     return s
 
@@ -132,7 +142,7 @@ def make_grad_sprite(sz=48):
 def make_enemy_sprite(sz=48):
     s = pygame.Surface((sz,sz), pygame.SRCALPHA)
     pygame.draw.circle(s,(140,30,200),(sz//2,sz//2+4),sz//2-4)
-    for i,ex in enumerate([sz//2-8,sz//2+8]):
+    for ex in [sz//2-8,sz//2+8]:
         pygame.draw.circle(s,(255,50,50),(ex,sz//2),6)
         pygame.draw.circle(s,(255,200,50),(ex,sz//2),3)
     for x in range(sz//2-8,sz//2+8):
@@ -141,12 +151,17 @@ def make_enemy_sprite(sz=48):
     pygame.draw.polygon(s,(120,20,180),[(sz//2+6,4),(sz//2+2,16),(sz//2+10,16)])
     return s
 
+print("Loading assets...")
+WALL_TEX  = load_or_make("wall.png",  make_wall_tex,  (64,64))
+FLOOR_TEX = load_or_make("floor.png", make_floor_tex, (64,64))
+CEIL_TEX  = load_or_make("ceiling.png", make_ceil_tex, (64,64))
 SPRITES = {
-    'B': {'tex': make_book_sprite(),     'pts':25, 'col':(220,60,60),  'name':'Buku'},
-    'P': {'tex': make_pencil_sprite(),   'pts':10, 'col':(255,220,50), 'name':'Pensil'},
-    'G': {'tex': make_grad_sprite(),     'pts':50, 'col':(120,80,255), 'name':'Toga'},
-    'E': {'tex': make_enemy_sprite(),    'pts': 0, 'col':(180,40,220), 'name':'Musuh'},
+    'B': {'tex': load_or_make('book.png',           make_book_sprite,   (64,64)), 'pts':25, 'col':(220,60,60),  'name':'Buku'},
+    'P': {'tex': load_or_make('pencil.png',         make_pencil_sprite, (64,64)), 'pts':10, 'col':(255,220,50), 'name':'Pensil'},
+    'G': {'tex': load_or_make('graduation_cap.png', make_grad_sprite,   (64,64)), 'pts':50, 'col':(120,80,255), 'name':'Toga'},
+    'E': {'tex': load_or_make('enemy.png',          make_enemy_sprite,  (64,64)), 'pts': 0, 'col':(180,40,220), 'name':'Musuh'},
 }
+print("Assets loaded!\n")
 
 # ── ALGORITMA GRAFIKA ──────────────────────────
 class Algo:
